@@ -157,9 +157,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="..\src\asio.h" />
+    <ClInclude Include="..\src\buffer.h" />
+    <ClInclude Include="..\src\buffer_ptr.h" />
     <ClInclude Include="..\src\master_server.h" />
+    <ClInclude Include="..\src\types.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\buffer.cc" />
     <ClCompile Include="..\src\master_server.cc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
