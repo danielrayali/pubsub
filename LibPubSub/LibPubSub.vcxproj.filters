@@ -2,6 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClInclude Include="..\src\master_server.h" />
+    <ClInclude Include="..\src\asio.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\master_server.cc" />
