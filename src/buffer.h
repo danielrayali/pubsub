@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include "buffer_ptr.h"
 #include "types.h"
 
@@ -34,12 +35,12 @@ class Buffer {
 
   const Byte* const Get() const;
 
-  BufferPtr GetPointer() const;
+  operator BufferPtr() const;
 
   operator bool() const;
 
  private:
-  Byte* buffer_ = nullptr;
+  std::unique_ptr<Byte> buffer_;
   size_t size_ = 0;
   size_t allocated_ = 0;
 };

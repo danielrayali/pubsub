@@ -36,7 +36,7 @@ Buffer::Buffer(const Buffer& buffer) {
     return;
 
   this->Allocate(buffer.size_);
-  memcpy(buffer_, buffer.buffer_, buffer.size_);
+  memcpy(buffer_.get(), buffer.buffer_.get(), buffer.size_);
 }
 
 Buffer& Buffer::operator=(const Buffer& buffer) {
@@ -44,7 +44,7 @@ Buffer& Buffer::operator=(const Buffer& buffer) {
     return *this;
 
   this->Allocate(buffer.size_);
-  memcpy(buffer_, buffer.buffer_, buffer.size_);
+  memcpy(buffer_.get(), buffer.buffer_.get(), buffer.size_);
   return *this;
 }
 
@@ -59,9 +59,9 @@ void Buffer::Allocate(const size_t bytes) {
   }
 
   if (buffer_ != nullptr)
-    delete [] buffer_;
+    buffer_.reset();
 
-  buffer_ = new Byte[bytes];
+  buffer_.reset(new Byte[bytes]);
   size_ = bytes;
   allocated_ = bytes;
 }
@@ -69,12 +69,12 @@ void Buffer::Allocate(const size_t bytes) {
 void Buffer::Allocate(const size_t bytes, const Byte init) {
   this->Allocate(bytes);
   for (size_t i = 0; i < size_; ++i)
-      buffer_[i] = init;
+      buffer_.get()[i] = init;
 }
 
 void Buffer::Free() {
   if (buffer_ != nullptr)
-    delete [] buffer_;
+    buffer_.reset();
 
   buffer_ = nullptr;
   size_ = 0;
@@ -86,15 +86,15 @@ size_t Buffer::Size() const {
 }
 
 Byte* Buffer::Get() {
-  return buffer_;
+  return buffer_.get();
 }
 
 const Byte* const Buffer::Get() const {
-  return buffer_;
+  return buffer_.get();
 }
 
-BufferPtr Buffer::GetPointer() const {
-  return BufferPtr(buffer_, size_);
+Buffer::operator BufferPtr() const {
+  return BufferPtr(buffer_.get(), size_);
 }
 
 Buffer::operator bool() const {
