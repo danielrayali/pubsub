@@ -9,4 +9,9 @@ add_executable (pubsubtest
 	${PUBSUB_SOURCE_DIR}/external/googletest/googletest/src/gtest_main.cc
 	buffer_test.cc)
 
-target_link_libraries (pubsubtest LINK_PUBLIC pubsub)
+if (UNIX)
+    # Google Test needs pthread when using gcc/g++
+    target_link_libraries (pubsubtest LINK_PUBLIC pubsub pthread)
+else ()
+    target_link_libraries (pubsubtest LINK_PUBLIC pubsub)
+endif ()
