@@ -16,10 +16,6 @@
 
 namespace pubsub {
 
-asio::io_service& DefaultIoService(); 
-
-void InitializeAsio();
-
-void ShutdownAsio();
+asio::io_service& DefaultIoService();
 
 }  // namespace pubsub

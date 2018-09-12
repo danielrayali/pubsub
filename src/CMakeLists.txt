@@ -10,6 +10,8 @@ add_library (pubsub
   buffer.h
   core.cc
   core.h
+  logging.cc
+  logging.h
   master_server.cc
   master_server.h
   query_client.cc

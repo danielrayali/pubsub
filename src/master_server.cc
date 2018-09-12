@@ -24,7 +24,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
   ~MasterSession() = default;
 
   void ServiceClient() {
-    clog << "Servicing client" << endl;
+    Log() << "Servicing client" << endl;
     MessageType type = MessageType::kUnknown;
     asio::read(socket_, asio::buffer(reinterpret_cast<char*>(&type), sizeof(MessageType)));
 
@@ -45,19 +45,19 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 // MasterServer definitions
 //
 
-MasterServer::MasterServer() : 
+MasterServer::MasterServer() :
   acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), 10000)),
-  socket_(DefaultIoService()) 
-{} 
+  socket_(DefaultIoService())
+{}
 
 void MasterServer::Run() {
-  clog << "Starting master server" << endl;
+  Log() << "Starting master server" << endl;
   this->DoAccept();
   result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
 }
 
 void MasterServer::Stop() {
-  clog << "Stopping master server" << endl;
+  Log() << "Stopping master server" << endl;
   acceptor_.cancel();
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
@@ -65,7 +65,7 @@ void MasterServer::Stop() {
 }
 
 void MasterServer::DoAccept() {
-  acceptor_.async_accept(socket_, [this](std::error_code ec){
+  acceptor_.async_accept(socket_, [this] (std::error_code ec) {
     if (!ec) {
       std::make_shared<MasterSession>(std::move(socket_))->ServiceClient();
       this->DoAccept();
@@ -76,3 +76,4 @@ void MasterServer::DoAccept() {
 }
 
 }  // namespace pubsub
+

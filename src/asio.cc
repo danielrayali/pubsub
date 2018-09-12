@@ -7,12 +7,5 @@ asio::io_service& DefaultIoService() {
   return service;
 }
 
-void InitializeAsio() {
-  DefaultIoService().run();
-}
-
-void ShutdownAsio() {
-  DefaultIoService().stop();
-}
-
 }  // namespace pubsub
+
