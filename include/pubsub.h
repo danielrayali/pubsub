@@ -1,7 +1,5 @@
 #pragma once
 
-namespace pubsub {
-
-#include "buffer.h"
-
-}  // namespace pubsub
+#include <core.h>
+#include <master_server.h>
+#include <query_client.h>

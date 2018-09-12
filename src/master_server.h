@@ -1,16 +1,24 @@
 #pragma once
 
+#include "asio.h"
+
 namespace pubsub {
 
 class MasterServer {
  public:
-   MasterServer() = default;
+  MasterServer();
 
-   ~MasterServer() = default;
+  ~MasterServer() = default;
 
-   void Run();
+  void Run();
 
-   void Stop();
+  void Stop();
+ 
+ private:
+  void DoAccept(); 
+
+  asio::ip::tcp::acceptor acceptor_;
+  asio::ip::tcp::socket socket_;
 };
 
 }  // namespace pubsub
