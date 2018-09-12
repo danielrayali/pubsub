@@ -12,5 +12,11 @@ add_executable (query_client
   query_client_main.cc
 )
 
-target_link_libraries (master_server LINK_PUBLIC pubsub)
-target_link_libraries (query_client LINK_PUBLIC pubsub)
+if (UNIX)
+  # Asio requires us to link pthreads when using gcc
+  target_link_libraries (master_server LINK_PUBLIC pubsub pthread)
+  target_link_libraries (query_client LINK_PUBLIC pubsub pthread)
+else ()
+  target_link_libraries (master_server LINK_PUBLIC pubsub)
+  target_link_libraries (query_client LINK_PUBLIC pubsub)
+endif ()
