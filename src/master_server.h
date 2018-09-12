@@ -19,6 +19,7 @@ class MasterServer {
 
   asio::ip::tcp::acceptor acceptor_;
   asio::ip::tcp::socket socket_;
+  std::future<void> result_;
 };
 
 }  // namespace pubsub

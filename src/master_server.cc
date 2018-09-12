@@ -1,4 +1,7 @@
 #include "master_server.h"
+#include <future>
+#include <system_error>
+#include <thread>
 #include "logging.h"
 #include "asio.h"
 #include "types.h"
@@ -9,6 +12,10 @@ using namespace std;
 using asio::ip::tcp;
 
 namespace pubsub {
+
+//
+// MasterSession definitions
+//
 
 class MasterSession : public std::enable_shared_from_this<MasterSession> {
  public:
@@ -34,6 +41,10 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
   tcp::socket socket_;
 };
 
+//
+// MasterServer definitions
+//
+
 MasterServer::MasterServer() : 
   acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), 10000)),
   socket_(DefaultIoService()) 
@@ -42,25 +53,24 @@ MasterServer::MasterServer() :
 void MasterServer::Run() {
   clog << "Starting master server" << endl;
   this->DoAccept();
-  std::async(std::launch::async, []{ DefaultIoService().run(); });
+  result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
 }
 
 void MasterServer::Stop() {
   clog << "Stopping master server" << endl;
   acceptor_.cancel();
+  future_status status = result_.wait_for(chrono::milliseconds(100));
+  if (status == future_status::timeout)
+    cerr << "Timed out waiting for MasterServer thread to return. This may cause erroneous shutdown" << endl;
 }
 
 void MasterServer::DoAccept() {
   acceptor_.async_accept(socket_, [this](std::error_code ec){
     if (!ec) {
-      // std::async(std::launch::async, [this] {
-        std::make_shared<MasterSession>(std::move(socket_))->ServiceClient();
-        // TODO(dali) See if this works
-        // GetIoService().run();
-      // });
+      std::make_shared<MasterSession>(std::move(socket_))->ServiceClient();
       this->DoAccept();
-    } else {
-      clog << "Error code is not ok: " << ec.category().name() << endl;
+    } else if (ec != asio::error::operation_aborted) {
+      cerr << "Error in async_accpet lambda: " << ec << " " << ec.message() << endl;
     }
   });
 }

@@ -34,8 +34,6 @@ void WaitForSignal() {
   while (gRunning) {
     this_thread::sleep_for(chrono::milliseconds(100));
   }
-
-  cout << "Waiting for singal returning" << endl;
 }
 
 void ShutdownPubsub() {
