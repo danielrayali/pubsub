@@ -17,8 +17,14 @@ std::vector<std::string> QueryClient::QueryForTopics() {
   tcp::resolver resolver(DefaultIoService());
   asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
 
-  const MessageType type = MessageType::kTopicsQuery;
+  MessageType type = MessageType::kTopicsQuery;
   asio::write(client, asio::buffer(&type, sizeof(MessageType)));
+
+  asio::read(client, asio::buffer(&type, sizeof(MessageType)));
+  if (type != MessageType::kTopicsQueryReply) {
+    Error() << "Query client did not receive standard reply type" << ToString(type) << endl;
+    return {};
+  }
 
   uint32_t num_topics = 0;
   asio::read(client, asio::buffer(reinterpret_cast<char*>(&num_topics), sizeof(uint32_t)));

@@ -14,8 +14,11 @@ add_library (pubsub
   logging.h
   master_server.cc
   master_server.h
+  messages.cc
+  messages.h
   query_client.cc
   query_client.h
+  types.h
 )
 
 target_include_directories (pubsub PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
