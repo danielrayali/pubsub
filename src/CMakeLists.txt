@@ -18,6 +18,10 @@ add_library (pubsub
   messages.h
   query_client.cc
   query_client.h
+  subscriber_client.cc
+  subscriber_client.h
+  topic_server.cc
+  topic_server.h
   types.h
 )
 

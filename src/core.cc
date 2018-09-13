@@ -11,7 +11,7 @@ namespace pubsub {
 static bool gRunning = false;
 
 void SignalHandler(int signal) {
-  clog << "Signal caught: " << signal << endl;
+  Log() << "Signal caught: " << signal << endl;
   gRunning = false;
 }
 

@@ -1,0 +1,6 @@
+- Pass command line arguments to server. Host and port
+- Create common server interface boilerplate
+- Manage list of topic ids in the master server
+- Synchronize subscribers list
+- Add callback for subscriber receptions
+- Need more information in TopicQueryResponse
