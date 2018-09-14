@@ -17,6 +17,8 @@ add_library (pubsub
   master_server.h
   messages.cc
   messages.h
+  publisher_client.cc
+  publisher_client.h
   query_client.cc
   query_client.h
   subscriber_client.cc

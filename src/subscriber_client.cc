@@ -5,6 +5,7 @@
 #include "messages.h"
 #include "logging.h"
 
+using namespace pubsub;
 using namespace std;
 using asio::ip::tcp;
 
@@ -14,7 +15,9 @@ SubscriberClient::SubscriberClient(const std::string& host, const uint16_t port)
   host_(host), port_(port), socket_(DefaultIoService())
 {}
 
-int32_t SubscriberClient::Register() {
+int32_t SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buffer)>& callback) {
+  callback_ = callback;
+
   tcp::resolver resolver(DefaultIoService());
   asio::connect(socket_, resolver.resolve({host_.c_str(), std::to_string(port_)}));
 
@@ -39,9 +42,18 @@ int32_t SubscriberClient::Register() {
 void SubscriberClient::DoRead() {  
   asio::async_read(socket_, asio::buffer(&message_type_, sizeof(MessageType)), 
     [this](const asio::error_code& error, size_t bytes_transferred){
-      if (message_type_ == MessageType::kShutdown) {
-        Log() << "Subscriber received shutdown message" << endl;
+      if (error == asio::error::operation_aborted)
         return;
+
+      if (message_type_ == MessageType::kData) {
+        uint64_t data_size = 0;
+        asio::read(socket_, asio::buffer(&data_size, sizeof(uint64_t)));
+        Buffer buffer(static_cast<size_t>(data_size));
+        asio::read(socket_, asio::buffer(buffer.Get(), buffer.Size()));
+        callback_(std::move(buffer));
+        this->DoRead();
+      } else if (message_type_ == MessageType::kShutdown) {
+        Log() << "Subscriber received shutdown message" << endl;
       } else {
         Log() << "Subscriber receive unknown message type: " << ToString(message_type_) << endl;
       }
@@ -65,9 +77,11 @@ void SubscriberClient::Deregister(const int32_t client_id) {
     return;
   }
 
+  socket_.cancel();
+
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout) {
-    Error() << "SubscrinerClient timed out waiting to close server connection" << endl;
+    Error() << "SubscriberClient timed out waiting to close server connection" << endl;
     return;
   }
 
