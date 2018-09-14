@@ -5,3 +5,8 @@
 - Add callback for subscriber receptions
 - Need more information in TopicQueryResponse
 - Investigate shutting down topic server's affect on subscribers
+- Write a component test to run master_server and ensure query_client get good results
+- Write a topic client (as part or consuming query_client) to add and remove topics? (Maybe a configuration on the server?)
+- Write a component test to shutdown topic_server when there are subscribers connected for a clean break
+- Write a component test to run topic_server, attach multiple subscribers, send multiple publisher messages, ensure messages are received, and everything shuts down gracefully
+- Added exception handling to each *_main.cc file
