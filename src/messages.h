@@ -15,6 +15,9 @@ enum class MessageType : uint8_t {
   kSubDeregister,
   kSubDeregisterReply,
   kShutdown,
+  kPublisher,
+  kPublisherReply,
+  kData,
   kError
 };
 
