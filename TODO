@@ -10,3 +10,4 @@
 - Write a component test to shutdown topic_server when there are subscribers connected for a clean break
 - Write a component test to run topic_server, attach multiple subscribers, send multiple publisher messages, ensure messages are received, and everything shuts down gracefully
 - Added exception handling to each *_main.cc file
+- Have topic_server update subscriber list when a client closes a connection or it can't send to that client

@@ -20,7 +20,7 @@ namespace pubsub {
 
 class TopicSession : public std::enable_shared_from_this<TopicSession> {
  public:
-  TopicSession(tcp::socket socket, map<int32_t, tcp::socket>& subscribers, int32_t& id_counter) : 
+  TopicSession(tcp::socket socket, map<int32_t, tcp::socket>& subscribers, int32_t& id_counter) :
     socket_(std::move(socket)),
     subscribers_(subscribers),
     id_counter_(id_counter)
@@ -60,7 +60,7 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
 
       type = MessageType::kSubDeregisterReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
-      
+
       Log() << "Subscriber " + to_string(client_id) + " deregistered" << endl;
     } else if (type == MessageType::kPublisher) {
       Log() << "Receiving and sending publisher data" << endl;
@@ -118,7 +118,7 @@ void TopicServer::Stop() {
   if (status == future_status::timeout)
     Error() << "Timed out waiting for TopicServer thread to return. This may cause erroneous shutdown" << endl;
 
-  MessageType type = MessageType::kShutdown; 
+  MessageType type = MessageType::kShutdown;
   for (auto& client : subscribers_) {
     asio::write(client.second, asio::buffer(&type, sizeof(MessageType)));
     client.second.close();

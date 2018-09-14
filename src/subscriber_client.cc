@@ -49,8 +49,10 @@ void SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buffer
 void SubscriberClient::DoRead() {
   asio::async_read(socket_, asio::buffer(&message_type_, sizeof(MessageType)),
     [this](const asio::error_code& error, size_t bytes_transferred){
-      if (error == asio::error::operation_aborted)
+      if (error == asio::error::operation_aborted) {
+        socket_.close();
         return;
+      }
 
       if (message_type_ == MessageType::kData) {
         uint64_t data_size = 0;
@@ -62,9 +64,10 @@ void SubscriberClient::DoRead() {
       } else if (message_type_ == MessageType::kShutdown) {
         Log() << "Subscriber received shutdown message" << endl;
         socket_.close();
-        token_ = -1;
       } else {
         Log() << "Subscriber receive unknown message type: " << ToString(message_type_) << endl;
+        Log() << "Disconnecting" << endl;
+        socket_.close();
       }
     });
 }
@@ -73,21 +76,22 @@ void SubscriberClient::Deregister() {
   if (token_ == -1)
     return;
 
-  tcp::socket client(DefaultIoService());
-  tcp::resolver resolver(DefaultIoService());
-  asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
+  if (socket_.is_open()) {
+    tcp::socket client(DefaultIoService());
+    tcp::resolver resolver(DefaultIoService());
+    asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
 
-  MessageType type = MessageType::kSubDeregister;
-  asio::write(client, asio::buffer(&type, sizeof(MessageType)));
-  asio::write(client, asio::buffer(&token_, sizeof(int32_t)));
+    MessageType type = MessageType::kSubDeregister;
+    asio::write(client, asio::buffer(&type, sizeof(MessageType)));
+    asio::write(client, asio::buffer(&token_, sizeof(int32_t)));
 
-  asio::read(client, asio::buffer(&type, sizeof(MessageType)));
-  if (type != MessageType::kSubDeregisterReply) {
-    Error() << "Subscriber client did not receive standard reply type" << ToString(type) << endl;
-    return;
+    asio::read(client, asio::buffer(&type, sizeof(MessageType)));
+    if (type != MessageType::kSubDeregisterReply) {
+      Error() << "Subscriber client did not receive standard reply type" << ToString(type) << endl;
+      Error() << "Closing connection and assuming deregistration" << endl;
+      socket_.cancel();
+    }
   }
-
-  socket_.cancel();
 
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout) {
@@ -96,7 +100,6 @@ void SubscriberClient::Deregister() {
   }
 
   token_ = -1;
-
   Log() << "Subscriber deregistered" << endl;
 }
 
