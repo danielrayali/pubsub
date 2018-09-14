@@ -11,3 +11,4 @@
 - Have topic_server update subscriber list when a client closes a connection or it can't send to that client
 - Design how a master server manages topic servers
 - Implement a ConfigClient and config file for the master server
+- Figure out a way to do large data transfers
