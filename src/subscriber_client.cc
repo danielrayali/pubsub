@@ -1,5 +1,6 @@
 #include "subscriber_client.h"
 #include <string>
+#include <chrono>
 #include "asio.h"
 #include "types.h"
 #include "messages.h"
@@ -11,12 +12,17 @@ using asio::ip::tcp;
 
 namespace pubsub {
 
-SubscriberClient::SubscriberClient(const std::string& host, const uint16_t port) : 
-  host_(host), port_(port), socket_(DefaultIoService())
+SubscriberClient::SubscriberClient(const std::string& host, const uint16_t port) :
+  host_(host), port_(port), socket_(DefaultIoService()), token_(-1)
 {}
 
-int32_t SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buffer)>& callback) {
-  callback_ = callback;
+SubscriberClient::~SubscriberClient() {
+  this->Deregister();
+}
+
+void SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buffer)>& callback) {
+  if (token_ != -1)
+    this->Deregister();
 
   tcp::resolver resolver(DefaultIoService());
   asio::connect(socket_, resolver.resolve({host_.c_str(), std::to_string(port_)}));
@@ -27,20 +33,21 @@ int32_t SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buf
   asio::read(socket_, asio::buffer(&type, sizeof(MessageType)));
   if (type != MessageType::kSubRegisterReply) {
     Error() << "Subscriber client did not receive standard reply type" << ToString(type) << endl;
-    return -1;
+    return;
   }
 
-  int32_t client_id = -1;
-  asio::read(socket_, asio::buffer(&client_id, sizeof(int32_t)));
+  asio::read(socket_, asio::buffer(&token_, sizeof(int32_t)));
 
+  callback_ = callback;
   this->DoRead();
 
-  Log() << "Subscriber registered" << endl;
-  return client_id;
+  result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
+
+  Log() << "Subscriber " << token_ << " registered" << endl;
 }
 
-void SubscriberClient::DoRead() {  
-  asio::async_read(socket_, asio::buffer(&message_type_, sizeof(MessageType)), 
+void SubscriberClient::DoRead() {
+  asio::async_read(socket_, asio::buffer(&message_type_, sizeof(MessageType)),
     [this](const asio::error_code& error, size_t bytes_transferred){
       if (error == asio::error::operation_aborted)
         return;
@@ -54,22 +61,25 @@ void SubscriberClient::DoRead() {
         this->DoRead();
       } else if (message_type_ == MessageType::kShutdown) {
         Log() << "Subscriber received shutdown message" << endl;
+        socket_.close();
+        token_ = -1;
       } else {
         Log() << "Subscriber receive unknown message type: " << ToString(message_type_) << endl;
       }
     });
-
-  result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
 }
 
-void SubscriberClient::Deregister(const int32_t client_id) {
+void SubscriberClient::Deregister() {
+  if (token_ == -1)
+    return;
+
   tcp::socket client(DefaultIoService());
   tcp::resolver resolver(DefaultIoService());
   asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
 
   MessageType type = MessageType::kSubDeregister;
   asio::write(client, asio::buffer(&type, sizeof(MessageType)));
-  asio::write(client, asio::buffer(&client_id, sizeof(int32_t)));
+  asio::write(client, asio::buffer(&token_, sizeof(int32_t)));
 
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
   if (type != MessageType::kSubDeregisterReply) {
@@ -84,6 +94,8 @@ void SubscriberClient::Deregister(const int32_t client_id) {
     Error() << "SubscriberClient timed out waiting to close server connection" << endl;
     return;
   }
+
+  token_ = -1;
 
   Log() << "Subscriber deregistered" << endl;
 }

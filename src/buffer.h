@@ -40,7 +40,7 @@ class Buffer {
   operator bool() const;
 
  private:
-  std::unique_ptr<Byte> buffer_;
+  std::unique_ptr<Byte[]> buffer_;
   size_t size_ = 0;
   size_t allocated_ = 0;
 };

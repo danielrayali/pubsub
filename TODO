@@ -4,3 +4,4 @@
 - Synchronize subscribers list
 - Add callback for subscriber receptions
 - Need more information in TopicQueryResponse
+- Investigate shutting down topic server's affect on subscribers

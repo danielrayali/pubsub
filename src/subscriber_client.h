@@ -13,11 +13,11 @@ class SubscriberClient {
  public:
   SubscriberClient(const std::string& host, const uint16_t port);
 
-  ~SubscriberClient() = default;
+  ~SubscriberClient();
 
-  int32_t Register(const std::function<void(pubsub::Buffer&& buffer)>& callback);
+  void Register(const std::function<void(pubsub::Buffer&& buffer)>& callback);
 
-  void Deregister(const int32_t client_id);
+  void Deregister();
 
  private:
   void DoRead();
@@ -28,6 +28,7 @@ class SubscriberClient {
   std::future<void> result_;
   MessageType message_type_;
   std::function<void(pubsub::Buffer&& buffer)> callback_;
+  int32_t token_;
 };
 
 }  // namespace pubsub

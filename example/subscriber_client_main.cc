@@ -10,8 +10,8 @@ void callback(pubsub::Buffer&& buffer) {
 
 int main(int argc, char* argv[]) {
   pubsub::SubscriberClient subscriber_client("localhost", 10001);
-  int32_t id = subscriber_client.Register(callback);
+  subscriber_client.Register(callback);
   pubsub::WaitForSignal();
-  subscriber_client.Deregister(id);
+  subscriber_client.Deregister();
   return 0;
 }
