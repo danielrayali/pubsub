@@ -8,6 +8,7 @@ add_library (pubsub
   asio.h
   buffer.cc
   buffer.h
+  buffer_ptr.h
   core.cc
   core.h
   logging.cc
