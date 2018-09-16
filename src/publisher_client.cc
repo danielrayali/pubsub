@@ -24,7 +24,7 @@ void PublisherClient::Publish(const void* const data, const uint64_t size) const
   MessageType type = MessageType::kPublisher;
   asio::write(client, asio::buffer(&type, sizeof(MessageType)));
   asio::write(client, asio::buffer(&size, sizeof(uint64_t)));
-  asio::write(client, asio::buffer(data, size));
+  asio::write(client, asio::buffer(data, static_cast<size_t>(size)));
 
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
 
