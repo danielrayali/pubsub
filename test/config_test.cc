@@ -5,7 +5,20 @@
 using namespace pubsub;
 using namespace std;
 
-TEST(ConfigTest, ToStringAndParseStringTest) {
+TEST(ConfigTest, TopicToFromString) {
+  TopicConfig topic_config;
+  topic_config.name = "topic1";
+  topic_config.port = 12346;
+
+  string buffer = topic_config.ToString();
+  TopicConfig read_config;
+  read_config.FromString(buffer);
+
+  ASSERT_STREQ(topic_config.name.c_str(), read_config.name.c_str());
+  ASSERT_EQ(topic_config.port, read_config.port);
+}
+
+TEST(ConfigTest, ToFromString) {
   Config write_config;
   write_config.master_port = 12345;
 

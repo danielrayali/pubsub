@@ -18,7 +18,9 @@ enum class MessageType : uint8_t {
   kPublisher,
   kPublisherReply,
   kData,
-  kError
+  kError,
+  kTopicAdd,
+  kTopicAddReply
 };
 
 std::string ToString(const MessageType& message_type);

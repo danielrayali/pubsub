@@ -1,18 +1,20 @@
-#include "query_client.h"
-#include <string>
+#include "master_client.h"
 #include "asio.h"
-#include "types.h"
 #include "messages.h"
 #include "logging.h"
+#include "types.h"
 
 using namespace std;
 using asio::ip::tcp;
 
 namespace pubsub {
 
-QueryClient::QueryClient(const std::string& host, const uint16_t port) : host_(host), port_(port) {}
+MasterClient::MasterClient(const string& host, const uint16_t port) :
+  host_(host),
+  port_(port)
+{}
 
-std::vector<std::string> QueryClient::QueryForTopics() {
+vector<string> MasterClient::QueryForTopics() {
   tcp::socket client(DefaultIoService());
   tcp::resolver resolver(DefaultIoService());
   asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
@@ -41,6 +43,28 @@ std::vector<std::string> QueryClient::QueryForTopics() {
   }
 
   return topic_ids;
+}
+
+void MasterClient::AddTopic(const TopicConfig& topic_config) {
+  tcp::socket client(DefaultIoService());
+  tcp::resolver resolver(DefaultIoService());
+  asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
+
+  MessageType type = MessageType::kTopicAdd;
+  asio::write(client, asio::buffer(&type, sizeof(MessageType)));
+
+  string buffer = topic_config.ToString();
+  uint64_t size = static_cast<uint64_t>(buffer.size());
+  asio::write(client, asio::buffer(&size, sizeof(uint64_t)));
+  asio::write(client, asio::buffer(buffer.c_str(), buffer.size()));
+
+  asio::read(client, asio::buffer(&type, sizeof(MessageType)));
+  if (type != MessageType::kTopicAddReply)
+    Error() << "Master client AddTopic did not receive AddTopicReply" << ToString(type) << endl;
+}
+
+void MasterClient::RemoveTopic(const std::string& topic_id) {
+
 }
 
 }  // namespace pubsub
