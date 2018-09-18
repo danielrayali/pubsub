@@ -17,14 +17,18 @@ struct MasterConfig {
 class Config {
  public:
   Config() = default;
-  
-  Config(const std::string& path);  // Will call Parse() with this path
+
+  Config(const std::string& path);  // Will call ParseFile() with path
 
   ~Config() = default;
 
+  std::string ToString() const;
+
+  void ParseString(const std::string& input);
+
   void WriteToFile(const std::string& path) const;
 
-  void Parse(const std::string& path);
+  void ParseFile(const std::string& path);
 
   MasterConfig GetMasterConfig() const;
 
@@ -35,6 +39,10 @@ class Config {
   void SetTopicConfigs(const std::vector<TopicConfig>& topic_configs);
 
  private:
+  void ToStream(std::ostream& output) const;
+
+  void ParseLine(const std::string& line);
+
   MasterConfig master_config_;
   std::vector<TopicConfig> topic_configs_;
 };

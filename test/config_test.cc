@@ -5,7 +5,7 @@
 using namespace pubsub;
 using namespace std;
 
-TEST(ConfigTest, BasicParseTest) {
+TEST(ConfigTest, ParseFileTest) {
   ofstream out_temp("temp.config");
   out_temp << "master,port=10000\n"
        << "topic,name=topic1,port=10001\n"
@@ -26,7 +26,7 @@ TEST(ConfigTest, BasicParseTest) {
   std::remove("temp.config");
 }
 
-TEST(ConfigTest, WriteAndParseTest) {
+TEST(ConfigTest, WriteToFileAndParseFileTest) {
   MasterConfig master_config;
   master_config.port = 12345;
 
@@ -44,6 +44,37 @@ TEST(ConfigTest, WriteAndParseTest) {
   write_config.WriteToFile("temp.config");
 
   Config read_config("temp.config");
+  MasterConfig read_master_config = read_config.GetMasterConfig();
+  vector<TopicConfig> read_topic_configs = read_config.GetTopicConfigs();
+
+  ASSERT_EQ(read_master_config.port, master_config.port);
+  for (int i = 0; i < 10; ++i) {
+    ASSERT_STREQ(read_topic_configs[i].name.c_str(), topic_configs[i].name.c_str());
+    ASSERT_EQ(read_topic_configs[i].port, topic_configs[i].port);
+  }
+}
+
+TEST(ConfigTest, ToStringAndParseStringTest) {
+  MasterConfig master_config;
+  master_config.port = 12345;
+
+  vector<TopicConfig> topic_configs;
+  for (int i = 0; i < 10; ++i) {
+    TopicConfig topic_config;
+    topic_config.name = "topic" + to_string(i);
+    topic_config.port = 12346 + i;
+    topic_configs.push_back(topic_config);
+  }
+
+  Config write_config;
+  write_config.SetMasterConfig(master_config);
+  write_config.SetTopicConfigs(topic_configs);
+
+  string buffer = write_config.ToString();
+
+  Config read_config;
+  read_config.ParseString(buffer);
+
   MasterConfig read_master_config = read_config.GetMasterConfig();
   vector<TopicConfig> read_topic_configs = read_config.GetTopicConfigs();
 
