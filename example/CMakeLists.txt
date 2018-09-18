@@ -1,7 +1,7 @@
 include_directories (
-  ${PUBSUB_SOURCE_DIR}/src
-  ${PUBSUB_SOURCE_DIR}/include
-  ${PUBSUB_SOURCE_DIR}/external/asio/asio/include
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/include
+  ${CMAKE_SOURCE_DIR}/external/asio/asio/include
 )
 
 add_executable (master_server

@@ -1,7 +1,7 @@
 # This matches the default cmake version on Ubuntu 16.04
 cmake_minimum_required (VERSION 3.5.1)
 
-project (PUBSUB)
+project (pubsub)
 
 if (UNIX)
   # Need to set this explicitly for gcc/g++

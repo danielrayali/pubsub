@@ -1,6 +1,6 @@
 include_directories (
-  ${PUBSUB_SOURCE_DIR}/src
-  ${PUBSUB_SOURCE_DIR}/external/asio/asio/include
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/external/asio/asio/include
 )
 
 add_library (pubsub
@@ -9,6 +9,8 @@ add_library (pubsub
   buffer.cc
   buffer.h
   buffer_ptr.h
+  config.cc
+  config.h
   core.cc
   core.h
   logging.cc

@@ -1,19 +1,19 @@
 include_directories (
-  ${PUBSUB_SOURCE_DIR}/src
-  ${PUBSUB_SOURCE_DIR}/external/googletest/googletest/include
-  ${PUBSUB_SOURCE_DIR}/external/googletest/googletest
+  ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/external/googletest/googletest/include
+  ${CMAKE_SOURCE_DIR}/external/googletest/googletest
 )
 
-add_executable (pubsubtest
-  ${PUBSUB_SOURCE_DIR}/external/googletest/googletest/src/gtest-all.cc
-  ${PUBSUB_SOURCE_DIR}/external/googletest/googletest/src/gtest_main.cc
+add_executable (pubsub_test
+  ${CMAKE_SOURCE_DIR}/external/googletest/googletest/src/gtest-all.cc
+  ${CMAKE_SOURCE_DIR}/external/googletest/googletest/src/gtest_main.cc
   buffer_test.cc
+  config_test.cc
 )
 
 if (UNIX)
     # Google Test needs pthread when using gcc/g++
-    target_link_libraries (pubsubtest LINK_PUBLIC pubsub pthread)
+    target_link_libraries (pubsub_test LINK_PUBLIC pubsub pthread)
 else ()
-    target_link_libraries (pubsubtest LINK_PUBLIC pubsub)
+    target_link_libraries (pubsub_test LINK_PUBLIC pubsub)
 endif ()
-
