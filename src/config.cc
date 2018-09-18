@@ -7,10 +7,6 @@ using namespace std;
 
 namespace pubsub {
 
-Config::Config(const string& path) {
-  this->ParseFile(path);
-}
-
 static vector<string> Split(const char delim, const string& input) {
   vector<string> tokens;
   size_t last = 0;
@@ -27,28 +23,7 @@ static vector<string> Split(const char delim, const string& input) {
   return tokens;
 }
 
-void Config::ToStream(ostream& output) const {
-  output << "master,port=" << master_config_.port << endl;
-  for (const TopicConfig& topic_config : topic_configs_) {
-    output << "topic,port=" << topic_config.port
-           << ",name=" << topic_config.name << endl;
-  }
-}
-
-string Config::ToString() const {
-  stringstream temp;
-  this->ToStream(temp);
-  return temp.str();
-}
-
-void Config::ParseString(const string& input) {
-  vector<string> lines = Split('\n', input);
-  for (const string& line : lines) {
-    this->ParseLine(line);
-  }
-}
-
-void Config::ParseLine(const string& line) {
+static void ParseLine(const string& line, Config& config) {
   size_t pos = line.find_first_not_of(" \t");
   if (pos == string::npos || line[pos] == '#')
     return;
@@ -58,7 +33,7 @@ void Config::ParseLine(const string& line) {
     for (size_t i = 1; i < line_tokens.size(); ++i) {
       vector<string> kv_pair = Split('=', line_tokens[i]);
       if (kv_pair[0] == "port")
-        master_config_.port = atoi(kv_pair[1].c_str());
+        config.master_port = atoi(kv_pair[1].c_str());
     }
   } else if (line_tokens[0] == "topic") {
     TopicConfig topic_config;
@@ -69,38 +44,25 @@ void Config::ParseLine(const string& line) {
       else if (kv_pair[0] == "name")
         topic_config.name = kv_pair[1];
     }
-    topic_configs_.push_back(topic_config);
+    config.topic_configs.push_back(topic_config);
   }
 }
 
-void Config::WriteToFile(const string& path) const {
-  ofstream output(path);
-  this->ToStream(output);
-}
-
-void Config::ParseFile(const string& path) {
-  ifstream input(path);
-  string line;
-  while(input) {
-    getline(input, line);
-    this->ParseLine(line);
+string Config::ToString() const {
+  stringstream temp;
+  temp << "master,port=" << this->master_port << endl;
+  for (const TopicConfig& topic_config : this->topic_configs) {
+    temp << "topic,port=" << topic_config.port
+           << ",name=" << topic_config.name << endl;
   }
+  return temp.str();
 }
 
-void Config::SetMasterConfig(const MasterConfig& master_config) {
-  master_config_ = master_config;
-}
-
-MasterConfig Config::GetMasterConfig() const {
-  return master_config_;
-}
-
-void Config::SetTopicConfigs(const vector<TopicConfig>& topic_configs) {
-  topic_configs_ = topic_configs;
-}
-
-vector<TopicConfig> Config::GetTopicConfigs() const {
-  return topic_configs_;
+void Config::FromString(const string& input) {
+  vector<string> lines = Split('\n', input);
+  for (const string& line : lines) {
+    ParseLine(line, *this);
+  }
 }
 
 }  // namespace pubsub
