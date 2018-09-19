@@ -1,25 +1,35 @@
 #pragma once
 
+#include <string>
+#include <vector>
 #include "asio.h"
+#include "config.h"
+#include "topic_server.h"
 
 namespace pubsub {
 
 class MasterServer {
  public:
-  MasterServer();
+  MasterServer(const std::string& path);
+
+  MasterServer(const Config& config);
 
   ~MasterServer() = default;
 
   void Run();
 
   void Stop();
- 
+
  private:
-  void DoAccept(); 
+  void DoAccept();
+
+  void Configure();
 
   asio::ip::tcp::acceptor acceptor_;
   asio::ip::tcp::socket socket_;
   std::future<void> result_;
+  Config config_;
+  std::vector<TopicServer> topic_servers_;
 };
 
 }  // namespace pubsub

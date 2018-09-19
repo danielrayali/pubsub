@@ -1,5 +1,7 @@
 #include "master_server.h"
+#include <fstream>
 #include <future>
+#include <set>
 #include <system_error>
 #include <thread>
 #include "asio.h"
@@ -30,6 +32,8 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
     asio::read(socket_, asio::buffer(&type, sizeof(MessageType)));
 
     if (type == MessageType::kTopicsQuery) {
+      Log() << "Servicing topics query client" << endl;
+
       type = MessageType::kTopicsQueryReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
 
@@ -41,9 +45,10 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
       asio::write(socket_, asio::buffer(&topic_id.front(), topic_id.size()));
     } else if (type == MessageType::kTopicAdd) {
+      Log() << "Servicing topic add client" << endl;
+
       uint64_t size = 0;
       asio::read(socket_, asio::buffer(&size, sizeof(uint64_t)));
-      cout << "Size is " << size << endl;
       string buffer(static_cast<size_t>(size), '\0');
       asio::read(socket_, asio::buffer(&buffer.front(), static_cast<size_t>(size)));
 
@@ -67,9 +72,24 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 // MasterServer definitions
 //
 
-MasterServer::MasterServer() :
-  acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), 10000)),
+MasterServer::MasterServer(const string& path) :
+  acceptor_(DefaultIoService()),
   socket_(DefaultIoService())
+{
+  ifstream input(path, ifstream::app);
+  streampos pos = input.tellg();
+  input.seekg(0);
+  string buffer(static_cast<unsigned>(pos), '\0');
+  input.read(&buffer.front(), pos);
+  config_.FromString(buffer);
+
+  this->Configure();
+}
+
+MasterServer::MasterServer(const Config& config) :
+  acceptor_(DefaultIoService()),
+  socket_(DefaultIoService()),
+  config_(config)
 {}
 
 void MasterServer::Run() {
@@ -97,5 +117,26 @@ void MasterServer::DoAccept() {
   });
 }
 
-}  // namespace pubsub
+void MasterServer::Configure() {
+  tcp::endpoint endpoint(tcp::v4(), config_.master_port);
+  acceptor_.open(endpoint.protocol());
+  acceptor_.bind(endpoint);
 
+  set<uint16_t> ports;
+  for (const TopicConfig& config : config_.topic_configs) {
+    auto iter = ports.find(config.port);
+    if (iter != ports.end()) {
+      string error = "Configuration invalid, port already in use";
+      Error() << error << endl;
+      throw runtime_error(error);
+    }
+
+    ports.insert(config.port);
+    topic_servers_.emplace_back(config);
+  }
+
+  for (auto& topic_server : topic_servers_)
+    topic_server.Run();
+}
+
+}  // namespace pubsub

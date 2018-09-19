@@ -100,9 +100,9 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
 // TopicServer definitions
 //
 
-TopicServer::TopicServer() :
-  acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), 10001)),
-  socket_(DefaultIoService())
+TopicServer::TopicServer(const TopicConfig& topic_config) :
+  acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), topic_config.port)),
+  socket_(DefaultIoService()), topic_config_(topic_config)
 {}
 
 void TopicServer::Run() {
