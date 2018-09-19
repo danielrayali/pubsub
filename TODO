@@ -12,3 +12,4 @@
 - Design how a master server manages topic servers
 - Implement a ConfigClient and config file for the master server
 - Figure out a way to do large data transfers
+- When MasterServer calls Configure() remove existing topic servers and potentially restart the acceptor on a new master port
