@@ -105,6 +105,21 @@ TopicServer::TopicServer(const TopicConfig& topic_config) :
   socket_(DefaultIoService()), topic_config_(topic_config)
 {}
 
+TopicServer::TopicServer(TopicServer&& other) :
+  acceptor_(DefaultIoService()),
+  socket_(DefaultIoService())
+{
+  if (&other == this)
+    return;
+
+  acceptor_ = std::move(other.acceptor_);
+  socket_ = std::move(other.socket_);
+  result_ = std::move(other.result_);
+  subscribers_ = std::move(other.subscribers_);
+  std::swap(id_counter_, other.id_counter_);
+  topic_config_ = std::move(other.topic_config_);
+}
+
 void TopicServer::Run() {
   Log() << "Starting topic server" << endl;
   this->DoAccept();
@@ -123,6 +138,10 @@ void TopicServer::Stop() {
     asio::write(client.second, asio::buffer(&type, sizeof(MessageType)));
     client.second.close();
   }
+}
+
+std::string TopicServer::GetName() const {
+  return topic_config_.name;
 }
 
 void TopicServer::DoAccept() {

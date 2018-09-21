@@ -1,15 +1,11 @@
-- Pass command line arguments to server. Host and port
 - Create common server interface boilerplate
-- Manage list of topic ids in the master server
 - Synchronize subscribers list
-- Need more information in TopicQueryResponse
 - Write a component test to run master_server and ensure query_client get good results
-- Write a topic client (as part or consuming query_client) to add and remove topics? (Maybe a configuration on the server?)
+- Implement master client to shutdown topics
 - Write a component test to shutdown topic_server when there are subscribers connected for a clean break
 - Write a component test to run topic_server, attach multiple subscribers, send multiple publisher messages, ensure messages are received, and everything shuts down gracefully
 - Added exception handling to each *_main.cc file
 - Have topic_server update subscriber list when a client closes a connection or it can't send to that client
-- Design how a master server manages topic servers
-- Implement a ConfigClient and config file for the master server
 - Figure out a way to do large data transfers
 - When MasterServer calls Configure() remove existing topic servers and potentially restart the acceptor on a new master port
+- Figure out how topic servers act with subscribers/publishers

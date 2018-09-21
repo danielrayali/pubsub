@@ -31,13 +31,15 @@ vector<string> MasterClient::QueryForTopics() {
   uint32_t num_topics = 0;
   asio::read(client, asio::buffer(reinterpret_cast<char*>(&num_topics), sizeof(uint32_t)));
 
+  Log() << "Receiving " << num_topics << " topics" << endl;
+
   vector<string> topic_ids;
   for (uint32_t i = 0; i < num_topics; ++i) {
     ByteSize topic_id_size = 0;
-    asio::read(client, asio::buffer(reinterpret_cast<char*>(&topic_id_size), sizeof(ByteSize)));
+    asio::read(client, asio::buffer(&topic_id_size, sizeof(ByteSize)));
 
     string topic_id(ToSizeT(topic_id_size), '\0');
-    asio::read(client, asio::buffer(reinterpret_cast<char*>(&topic_id.front()), ToSizeT(topic_id_size)));
+    asio::read(client, asio::buffer(&topic_id.front(), ToSizeT(topic_id_size)));
 
     topic_ids.push_back(topic_id);
   }

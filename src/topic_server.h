@@ -9,13 +9,17 @@ namespace pubsub {
 
 class TopicServer {
  public:
-  TopicServer(const TopicConfig& topic_config);
+  explicit TopicServer(const TopicConfig& topic_config);
+
+  TopicServer(TopicServer&& other);
 
   ~TopicServer() = default;
 
   void Run();
 
   void Stop();
+
+  std::string GetName() const;
 
  private:
   void DoAccept();

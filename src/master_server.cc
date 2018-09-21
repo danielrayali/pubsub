@@ -22,7 +22,10 @@ namespace pubsub {
 
 class MasterSession : public std::enable_shared_from_this<MasterSession> {
  public:
-  MasterSession(tcp::socket socket) : socket_(std::move(socket)) {}
+  MasterSession(tcp::socket socket, vector<TopicServer>& topic_servers) :
+    socket_(std::move(socket)),
+    topic_servers_(topic_servers)
+  {}
 
   ~MasterSession() = default;
 
@@ -37,13 +40,17 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       type = MessageType::kTopicsQueryReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
 
-      uint32_t num_topics = 1;
+      uint32_t num_topics = static_cast<uint32_t>(topic_servers_.size());
       asio::write(socket_, asio::buffer(&num_topics, sizeof(uint32_t)));
 
-      string topic_id = "Hello, World!";
-      ByteSize byte_size = topic_id.size();
-      asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
-      asio::write(socket_, asio::buffer(&topic_id.front(), topic_id.size()));
+      cout << "Sending " << num_topics << " topics" << endl;
+      for (uint32_t i = 0; i < num_topics; i++) {
+        string topic_id = topic_servers_[i].GetName();
+        cout << "Got topic id as " << topic_id << endl;
+        ByteSize byte_size = topic_id.size();
+        asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
+        asio::write(socket_, asio::buffer(&topic_id.front(), topic_id.size()));
+      }
     } else if (type == MessageType::kTopicAdd) {
       Log() << "Servicing topic add client" << endl;
 
@@ -57,6 +64,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       cout << "TopicConfig.name: " << topic_config.name << endl;
       cout << "TopicConfig.port: " << topic_config.port << endl;
 
+      topic_servers_.emplace_back(topic_config);
       type = MessageType::kTopicAddReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
     } else {
@@ -66,6 +74,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 
  private:
   tcp::socket socket_;
+  vector<TopicServer>& topic_servers_;
 };
 
 //
@@ -90,7 +99,9 @@ MasterServer::MasterServer(const Config& config) :
   acceptor_(DefaultIoService()),
   socket_(DefaultIoService()),
   config_(config)
-{}
+{
+  this->Configure();
+}
 
 void MasterServer::Run() {
   Log() << "Starting master server" << endl;
@@ -100,7 +111,10 @@ void MasterServer::Run() {
 
 void MasterServer::Stop() {
   Log() << "Stopping master server" << endl;
-  acceptor_.cancel();
+
+  if (acceptor_.is_open())
+    acceptor_.cancel();
+
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
     Error() << "Timed out waiting for MasterServer thread to return. This may cause erroneous shutdown" << endl;
@@ -109,7 +123,7 @@ void MasterServer::Stop() {
 void MasterServer::DoAccept() {
   acceptor_.async_accept(socket_, [this] (std::error_code ec) {
     if (!ec) {
-      std::make_shared<MasterSession>(std::move(socket_))->ServiceClient();
+      std::make_shared<MasterSession>(std::move(socket_), topic_servers_)->ServiceClient();
       this->DoAccept();
     } else if (ec != asio::error::operation_aborted) {
       Error() << "Error in async_accpet lambda: " << ec << " " << ec.message() << endl;
@@ -121,6 +135,7 @@ void MasterServer::Configure() {
   tcp::endpoint endpoint(tcp::v4(), config_.master_port);
   acceptor_.open(endpoint.protocol());
   acceptor_.bind(endpoint);
+  acceptor_.listen();
 
   set<uint16_t> ports;
   for (const TopicConfig& config : config_.topic_configs) {
