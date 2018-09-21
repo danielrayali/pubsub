@@ -10,10 +10,10 @@ void callback(pubsub::Buffer&& buffer) {
 }
 
 int main(int argc, char* argv[]) {
-  SARGS_REQUIRED_FLAG_VALUE("--master-port", "-mp", "The master server's port to connect to");
+  SARGS_REQUIRED_FLAG_VALUE("--topic-port", "-tp", "The topic server's port to connect to");
   SARGS_INITIALIZE(argc, argv);
 
-  uint16_t port = SARGS_GET_UINT16("-mp");
+  uint16_t port = SARGS_GET_UINT16("-tp");
   pubsub::SubscriberClient subscriber_client("localhost", port);
   subscriber_client.Register(callback);
   pubsub::WaitForSignal();

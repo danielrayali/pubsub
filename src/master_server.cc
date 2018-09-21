@@ -61,10 +61,11 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 
       TopicConfig topic_config;
       topic_config.FromString(buffer);
-      cout << "TopicConfig.name: " << topic_config.name << endl;
-      cout << "TopicConfig.port: " << topic_config.port << endl;
+      Log() << "Adding topic\n  Name: " << topic_config.name << "\n  Port: " << topic_config.port << endl;
 
       topic_servers_.emplace_back(topic_config);
+      topic_servers_.back().Run();
+
       type = MessageType::kTopicAddReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
     } else {

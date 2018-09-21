@@ -9,3 +9,4 @@
 - Figure out a way to do large data transfers
 - When MasterServer calls Configure() remove existing topic servers and potentially restart the acceptor on a new master port
 - Figure out how topic servers act with subscribers/publishers
+- Ensure proper shutdown of all topic servers
