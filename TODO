@@ -10,3 +10,4 @@
 - When MasterServer calls Configure() remove existing topic servers and potentially restart the acceptor on a new master port
 - Figure out how topic servers act with subscribers/publishers
 - Ensure proper shutdown of all topic servers
+- Figure out how to properly move all members of TopicServer

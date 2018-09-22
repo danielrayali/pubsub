@@ -14,7 +14,7 @@ class MasterServer {
 
   MasterServer(const Config& config);
 
-  ~MasterServer() = default;
+  ~MasterServer();
 
   void Run();
 
@@ -29,7 +29,7 @@ class MasterServer {
   asio::ip::tcp::socket socket_;
   std::future<void> result_;
   Config config_;
-  std::vector<TopicServer> topic_servers_;
+  std::vector<std::unique_ptr<TopicServer>> topic_servers_;
 };
 
 }  // namespace pubsub

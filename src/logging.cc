@@ -5,13 +5,17 @@ namespace pubsub {
 static std::ostream* gLogStream = &std::clog;
 static std::ostream* gErrorStream = &std::cerr;
 
-std::ostream& Log() {
+namespace internal {
+
+std::ostream& _Log() {
   return *gLogStream;
 }
 
-std::ostream& Error() {
+std::ostream& _Error() {
   return *gErrorStream;
 }
+
+}  // namespace internal
 
 void SetLogStream(std::ostream& log) {
   gLogStream = &log;

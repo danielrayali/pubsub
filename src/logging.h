@@ -4,9 +4,17 @@
 
 namespace pubsub {
 
-std::ostream& Log();
+namespace internal {
 
-std::ostream& Error();
+std::ostream& _Log();
+
+std::ostream& _Error();
+
+}  // namespace internal
+
+#define Log() internal::_Log() << __FILE__ << ":" << __LINE__ << " "
+
+#define Error() internal::_Error() << __FILE__ << ":" << __LINE__ << " "
 
 void SetLogStream(std::ostream& log);
 

@@ -22,7 +22,7 @@ namespace pubsub {
 
 class MasterSession : public std::enable_shared_from_this<MasterSession> {
  public:
-  MasterSession(tcp::socket socket, vector<TopicServer>& topic_servers) :
+  MasterSession(tcp::socket socket, vector<unique_ptr<TopicServer>>& topic_servers) :
     socket_(std::move(socket)),
     topic_servers_(topic_servers)
   {}
@@ -45,7 +45,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 
       cout << "Sending " << num_topics << " topics" << endl;
       for (uint32_t i = 0; i < num_topics; i++) {
-        string topic_id = topic_servers_[i].GetName();
+        string topic_id = topic_servers_[i]->GetName();
         cout << "Got topic id as " << topic_id << endl;
         ByteSize byte_size = topic_id.size();
         asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
@@ -63,8 +63,9 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       topic_config.FromString(buffer);
       Log() << "Adding topic\n  Name: " << topic_config.name << "\n  Port: " << topic_config.port << endl;
 
-      topic_servers_.emplace_back(topic_config);
-      topic_servers_.back().Run();
+      topic_servers_.emplace_back();
+      topic_servers_.back().reset(new TopicServer(topic_config));
+      topic_servers_.back()->Run();
 
       type = MessageType::kTopicAddReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
@@ -75,7 +76,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 
  private:
   tcp::socket socket_;
-  vector<TopicServer>& topic_servers_;
+  vector<unique_ptr<TopicServer>>& topic_servers_;
 };
 
 //
@@ -102,6 +103,13 @@ MasterServer::MasterServer(const Config& config) :
   config_(config)
 {
   this->Configure();
+}
+
+MasterServer::~MasterServer() {
+  this->Stop();
+
+  for (auto& topic_server : topic_servers_)
+    topic_server->Stop();
 }
 
 void MasterServer::Run() {
@@ -148,11 +156,12 @@ void MasterServer::Configure() {
     }
 
     ports.insert(config.port);
-    topic_servers_.emplace_back(config);
+    topic_servers_.emplace_back();
+    topic_servers_.back().reset(new TopicServer(config));
   }
 
   for (auto& topic_server : topic_servers_)
-    topic_server.Run();
+    topic_server->Run();
 }
 
 }  // namespace pubsub
