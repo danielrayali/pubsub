@@ -3,6 +3,7 @@ include_directories (
   ${CMAKE_SOURCE_DIR}/include
   ${CMAKE_SOURCE_DIR}/external/asio/asio/include
   ${CMAKE_SOURCE_DIR}/external/sargs/src
+  ${CMAKE_SOURCE_DIR}/external/mio/include
 )
 
 add_executable (master_server
@@ -23,6 +24,7 @@ add_executable (subscriber_client
 
 add_executable (publisher_client
   publisher_client_main.cc
+  mio.h
 )
 
 if (UNIX)

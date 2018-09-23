@@ -43,10 +43,8 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       uint32_t num_topics = static_cast<uint32_t>(topic_servers_.size());
       asio::write(socket_, asio::buffer(&num_topics, sizeof(uint32_t)));
 
-      cout << "Sending " << num_topics << " topics" << endl;
       for (uint32_t i = 0; i < num_topics; i++) {
         string topic_id = topic_servers_[i]->GetName();
-        cout << "Got topic id as " << topic_id << endl;
         ByteSize byte_size = topic_id.size();
         asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
         asio::write(socket_, asio::buffer(&topic_id.front(), topic_id.size()));

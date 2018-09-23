@@ -11,8 +11,6 @@ class TopicServer {
  public:
   explicit TopicServer(const TopicConfig& topic_config);
 
-  TopicServer(TopicServer&& other);
-
   ~TopicServer() = default;
 
   void Run();

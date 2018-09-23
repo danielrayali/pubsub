@@ -65,26 +65,32 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
     } else if (type == MessageType::kPublisher) {
       Log() << "Receiving and sending publisher data" << endl;
 
-      uint64_t data_size = 0;
-      asio::read(socket_, asio::buffer(&data_size, sizeof(uint64_t)));
+      uint64_t total_data_size = 0;
+      asio::read(socket_, asio::buffer(&total_data_size, sizeof(uint64_t)));
 
-      size_t data_size_t = static_cast<size_t>(data_size);
-      Buffer buffer(data_size_t);
-      asio::read(socket_, asio::buffer(buffer.Get(), data_size_t));
+      Buffer buffer;
+      uint64_t remaining = total_data_size;
+      while (remaining > 0) {
+        uint64_t block_size = 0;
+        asio::read(socket_, asio::buffer(&block_size, sizeof(uint64_t)));
 
-      printf("TopicServer received %s\n", reinterpret_cast<char*>(buffer.Get()));
+        buffer.Allocate(static_cast<size_t>(block_size));
+        asio::read(socket_, asio::buffer(buffer.Get(), static_cast<size_t>(block_size)));
 
-      type = MessageType::kData;
-      for (auto& iter : subscribers_) {
-        asio::write(iter.second, asio::buffer(&type, sizeof(MessageType)));
-        asio::write(iter.second, asio::buffer(&data_size, sizeof(uint64_t)));
-        asio::write(iter.second, asio::buffer(buffer.Get(), data_size_t));
+        type = MessageType::kData;
+        for (auto& iter : subscribers_) {
+          asio::write(iter.second, asio::buffer(&type, sizeof(MessageType)));
+          asio::write(iter.second, asio::buffer(&block_size, sizeof(uint64_t)));
+          asio::write(iter.second, asio::buffer(buffer.Get(), static_cast<size_t>(block_size)));
+        }
+
+        remaining -= block_size;
       }
 
       type = MessageType::kPublisherReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
 
-      Log() << "Data sent to " << subscribers_.size() << " subscribers" << endl;
+      Log() << total_data_size << " bytes sent to " << subscribers_.size() << " subscribers" << endl;
     } else {
       Error() << "Topic session cannot handle received message type: " << ToString(type) << endl;
     }
@@ -104,21 +110,6 @@ TopicServer::TopicServer(const TopicConfig& topic_config) :
   acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), topic_config.port)),
   socket_(DefaultIoService()), topic_config_(topic_config)
 {}
-
-TopicServer::TopicServer(TopicServer&& other) :
-  acceptor_(DefaultIoService()),
-  socket_(DefaultIoService())
-{
-  if (&other == this)
-    return;
-
-  acceptor_ = std::move(other.acceptor_);
-  socket_ = std::move(other.socket_);
-  result_ = std::move(other.result_);
-  subscribers_ = std::move(other.subscribers_);
-  std::swap(id_counter_, other.id_counter_);
-  topic_config_ = std::move(other.topic_config_);
-}
 
 void TopicServer::Run() {
   Log() << "Starting topic server" << endl;
