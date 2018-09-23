@@ -1,13 +1,11 @@
 - Create common server interface boilerplate
-- Synchronize subscribers list
+- Synchronize subscribers list for multiple threads
 - Write a component test to run master_server and ensure query_client get good results
-- Implement master client to shutdown topics
+- Implement RemoveTopic() in master_client
 - Write a component test to shutdown topic_server when there are subscribers connected for a clean break
 - Write a component test to run topic_server, attach multiple subscribers, send multiple publisher messages, ensure messages are received, and everything shuts down gracefully
 - Added exception handling to each *_main.cc file
 - Have topic_server update subscriber list when a client closes a connection or it can't send to that client
-- Figure out a way to do large data transfers
 - When MasterServer calls Configure() remove existing topic servers and potentially restart the acceptor on a new master port
-- Figure out how topic servers act with subscribers/publishers
-- Ensure proper shutdown of all topic servers
-- Figure out how to properly move all members of TopicServer
+- Ensure proper shutdown of all topic servers from the master server (currently timing out)
+- Figure out how to properly move all members of TopicServer (instead of using heap)
