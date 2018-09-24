@@ -28,6 +28,7 @@ class TopicServer {
   std::map<int, asio::ip::tcp::socket> subscribers_;
   int32_t id_counter_ = 0;  // for clients
   TopicConfig topic_config_;
+  bool is_running_;
 };
 
 }  // namespace pubsub

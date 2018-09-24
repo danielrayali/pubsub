@@ -108,16 +108,25 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
 
 TopicServer::TopicServer(const TopicConfig& topic_config) :
   acceptor_(DefaultIoService(), tcp::endpoint(tcp::v4(), topic_config.port)),
-  socket_(DefaultIoService()), topic_config_(topic_config)
+  socket_(DefaultIoService()),
+  topic_config_(topic_config),
+  is_running_(false)
 {}
 
 void TopicServer::Run() {
+  if (is_running_)
+    return;
+
   Log() << "Starting topic server" << endl;
   this->DoAccept();
   result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
+  is_running_ = true;
 }
 
 void TopicServer::Stop() {
+  if (!is_running_)
+    return;
+
   Log() << "Stopping topic server" << endl;
   acceptor_.cancel();
   future_status status = result_.wait_for(chrono::milliseconds(100));
@@ -129,6 +138,8 @@ void TopicServer::Stop() {
     asio::write(client.second, asio::buffer(&type, sizeof(MessageType)));
     client.second.close();
   }
+
+  is_running_ = false;
 }
 
 std::string TopicServer::GetName() const {

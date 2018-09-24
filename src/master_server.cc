@@ -49,6 +49,8 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
         asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
         asio::write(socket_, asio::buffer(&topic_id.front(), topic_id.size()));
       }
+
+      Log() << "Sent " << num_topics << " topics" << endl;
     } else if (type == MessageType::kTopicAdd) {
       Log() << "Servicing topic add client" << endl;
 
@@ -83,7 +85,8 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 
 MasterServer::MasterServer(const string& path) :
   acceptor_(DefaultIoService()),
-  socket_(DefaultIoService())
+  socket_(DefaultIoService()),
+  is_running_(false)
 {
   ifstream input(path, ifstream::app);
   streampos pos = input.tellg();
@@ -98,7 +101,8 @@ MasterServer::MasterServer(const string& path) :
 MasterServer::MasterServer(const Config& config) :
   acceptor_(DefaultIoService()),
   socket_(DefaultIoService()),
-  config_(config)
+  config_(config),
+  is_running_(false)
 {
   this->Configure();
 }
@@ -111,20 +115,30 @@ MasterServer::~MasterServer() {
 }
 
 void MasterServer::Run() {
+  if (is_running_)
+    return;
+
   Log() << "Starting master server" << endl;
   this->DoAccept();
   result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
+  is_running_ = true;
 }
 
 void MasterServer::Stop() {
+  if (!is_running_)
+    return;
   Log() << "Stopping master server" << endl;
 
-  if (acceptor_.is_open())
-    acceptor_.cancel();
+  acceptor_.cancel();
+
+  for (auto& topic_server : topic_servers_)
+    topic_server->Stop();
 
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
     Error() << "Timed out waiting for MasterServer thread to return. This may cause erroneous shutdown" << endl;
+
+  is_running_ = false;
 }
 
 void MasterServer::DoAccept() {

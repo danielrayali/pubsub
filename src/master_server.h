@@ -30,6 +30,7 @@ class MasterServer {
   std::future<void> result_;
   Config config_;
   std::vector<std::unique_ptr<TopicServer>> topic_servers_;
+  bool is_running_;
 };
 
 }  // namespace pubsub
