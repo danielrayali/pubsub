@@ -13,14 +13,7 @@ namespace pubsub {
 
 PublisherClient::PublisherClient(const string& host, const uint16_t port) :
   host_(host),
-  port_(port),
-  block_size_(0)
-{}
-
-PublisherClient::PublisherClient(const string& host, const uint16_t port, const uint64_t block_size) :
-  host_(host),
-  port_(port),
-  block_size_(block_size)
+  port_(port)
 {}
 
 void PublisherClient::Publish(const void* data, const uint64_t size) const {
@@ -32,15 +25,13 @@ void PublisherClient::Publish(const void* data, const uint64_t size) const {
   asio::write(client, asio::buffer(&type, sizeof(MessageType)));
   asio::write(client, asio::buffer(&size, sizeof(uint64_t)));
 
+  const uint64_t kBlockSize = 4096;
   uint64_t count = 0;
   uint64_t remaining = size;
   const Byte* current = reinterpret_cast<const Byte*>(data);
   while (remaining > 0) {
     uint64_t to_send;
-    if (block_size_ == 0)
-      to_send = remaining;
-    else
-      to_send = min(remaining, block_size_);
+    to_send = min(remaining, kBlockSize);
 
     asio::write(client, asio::buffer(&to_send, sizeof(uint64_t)));
     asio::write(client, asio::buffer(current, static_cast<size_t>(to_send)));
@@ -49,7 +40,7 @@ void PublisherClient::Publish(const void* data, const uint64_t size) const {
     count++;
   }
 
-  Log() << "Published " << count << " blocks, containing " << size << " bytes" << endl;
+  Log() << "Published " << count << " blocks, containing a total of " << size << " bytes" << endl;
 
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
 
