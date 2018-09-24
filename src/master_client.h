@@ -15,7 +15,7 @@ class MasterClient {
 
   ~MasterClient() = default;
 
-  std::vector<std::string> QueryForTopics();
+  std::vector<TopicConfig> QueryForTopics();
 
   void AddTopic(const TopicConfig& topic_config);
 

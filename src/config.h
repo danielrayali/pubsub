@@ -10,6 +10,12 @@ struct TopicConfig {
 
   uint16_t port;
 
+  TopicConfig() = default;
+
+  TopicConfig(const std::string& input);
+
+  ~TopicConfig() = default;
+
   std::string ToString() const;
 
   void FromString(const std::string& input);

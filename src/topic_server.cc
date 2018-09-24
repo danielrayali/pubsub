@@ -129,6 +129,8 @@ void TopicServer::Stop() {
 
   Log() << "Stopping topic server" << endl;
   acceptor_.cancel();
+  DefaultIoService().stop();
+
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
     Error() << "Timed out waiting for TopicServer thread to return. This may cause erroneous shutdown" << endl;
@@ -142,8 +144,8 @@ void TopicServer::Stop() {
   is_running_ = false;
 }
 
-std::string TopicServer::GetName() const {
-  return topic_config_.name;
+TopicConfig TopicServer::GetTopicConfig() const {
+  return topic_config_;
 }
 
 void TopicServer::DoAccept() {

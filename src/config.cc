@@ -48,6 +48,10 @@ static void ParseLine(const string& line, Config& config) {
   }
 }
 
+TopicConfig::TopicConfig(const std::string& input) {
+  this->FromString(input);
+}
+
 string TopicConfig::ToString() const {
   stringstream temp;
   temp << static_cast<uint64_t>(this->name.size()) << this->name << this->port;

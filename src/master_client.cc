@@ -14,7 +14,7 @@ MasterClient::MasterClient(const string& host, const uint16_t port) :
   port_(port)
 {}
 
-vector<string> MasterClient::QueryForTopics() {
+vector<TopicConfig> MasterClient::QueryForTopics() {
   tcp::socket client(DefaultIoService());
   tcp::resolver resolver(DefaultIoService());
   asio::connect(client, resolver.resolve({host_.c_str(), std::to_string(port_)}));
@@ -33,18 +33,18 @@ vector<string> MasterClient::QueryForTopics() {
 
   Log() << "Receiving " << num_topics << " topics" << endl;
 
-  vector<string> topic_ids;
+  vector<TopicConfig> topic_configs;
   for (uint32_t i = 0; i < num_topics; ++i) {
-    ByteSize topic_id_size = 0;
-    asio::read(client, asio::buffer(&topic_id_size, sizeof(ByteSize)));
+    ByteSize topic_config_size = 0;
+    asio::read(client, asio::buffer(&topic_config_size, sizeof(ByteSize)));
 
-    string topic_id(ToSizeT(topic_id_size), '\0');
-    asio::read(client, asio::buffer(&topic_id.front(), ToSizeT(topic_id_size)));
+    string topic_config_str(ToSizeT(topic_config_size), '\0');
+    asio::read(client, asio::buffer(&topic_config_str.front(), ToSizeT(topic_config_size)));
 
-    topic_ids.push_back(topic_id);
+    topic_configs.emplace_back(topic_config_str);
   }
 
-  return topic_ids;
+  return topic_configs;
 }
 
 void MasterClient::AddTopic(const TopicConfig& topic_config) {
@@ -63,10 +63,6 @@ void MasterClient::AddTopic(const TopicConfig& topic_config) {
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
   if (type != MessageType::kTopicAddReply)
     Error() << "Master client AddTopic did not receive AddTopicReply" << ToString(type) << endl;
-}
-
-void MasterClient::RemoveTopic(const std::string& topic_id) {
-
 }
 
 }  // namespace pubsub

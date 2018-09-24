@@ -30,7 +30,6 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
   ~MasterSession() = default;
 
   void ServiceClient() {
-    Log() << "Servicing client" << endl;
     MessageType type = MessageType::kUnknown;
     asio::read(socket_, asio::buffer(&type, sizeof(MessageType)));
 
@@ -44,10 +43,10 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       asio::write(socket_, asio::buffer(&num_topics, sizeof(uint32_t)));
 
       for (uint32_t i = 0; i < num_topics; i++) {
-        string topic_id = topic_servers_[i]->GetName();
-        ByteSize byte_size = topic_id.size();
+        string topic_config = topic_servers_[i]->GetTopicConfig().ToString();
+        ByteSize byte_size = topic_config.size();
         asio::write(socket_, asio::buffer(&byte_size, sizeof(ByteSize)));
-        asio::write(socket_, asio::buffer(&topic_id.front(), topic_id.size()));
+        asio::write(socket_, asio::buffer(&topic_config.front(), topic_config.size()));
       }
 
       Log() << "Sent " << num_topics << " topics" << endl;
@@ -63,8 +62,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
       topic_config.FromString(buffer);
       Log() << "Adding topic\n  Name: " << topic_config.name << "\n  Port: " << topic_config.port << endl;
 
-      topic_servers_.emplace_back();
-      topic_servers_.back().reset(new TopicServer(topic_config));
+      topic_servers_.emplace_back(new TopicServer(topic_config));
       topic_servers_.back()->Run();
 
       type = MessageType::kTopicAddReply;
@@ -134,6 +132,7 @@ void MasterServer::Stop() {
   for (auto& topic_server : topic_servers_)
     topic_server->Stop();
 
+  DefaultIoService().stop();
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
     Error() << "Timed out waiting for MasterServer thread to return. This may cause erroneous shutdown" << endl;

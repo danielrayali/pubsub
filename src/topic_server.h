@@ -17,7 +17,7 @@ class TopicServer {
 
   void Stop();
 
-  std::string GetName() const;
+  TopicConfig GetTopicConfig() const;
 
  private:
   void DoAccept();

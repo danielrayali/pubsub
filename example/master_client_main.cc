@@ -17,9 +17,9 @@ int main(int argc, char* argv[]) {
     uint16_t master_port = SARGS_GET_UINT16("-mp");
     MasterClient master_client("localhost", master_port);
     if (SARGS_GET_STRING("--mode") == "query") {
-      vector<string> topic_ids = master_client.QueryForTopics();
-      for (auto topic_id : topic_ids)
-        cout << "Found topic: " << topic_id << endl;
+      vector<TopicConfig> topic_configs = master_client.QueryForTopics();
+      for (auto topic_config : topic_configs)
+        cout << "Topic: name=" << topic_config.name << ", port=" << topic_config.port << endl;
     } else if (SARGS_GET_STRING("--mode") == "add") {
       TopicConfig topic_config;
       topic_config.port = SARGS_GET_UINT16("--port");
