@@ -1,10 +1,13 @@
 #include "subscriber_client.h"
+
 #include <string>
 #include <chrono>
+
 #include "asio.h"
+#include "spdlog/spdlog.h"
+
 #include "types.h"
 #include "messages.h"
-#include "logging.h"
 
 using namespace pubsub;
 using namespace std;
@@ -32,7 +35,7 @@ void SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buffer
 
   asio::read(socket_, asio::buffer(&type, sizeof(MessageType)));
   if (type != MessageType::kSubRegisterReply) {
-    Error() << "Subscriber client did not receive standard reply type" << ToString(type) << endl;
+    spdlog::error("Subscriber client did not receive standard reply type {}", ToString(type));
     return;
   }
 
@@ -43,7 +46,7 @@ void SubscriberClient::Register(const std::function<void(pubsub::Buffer&& buffer
 
   result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
 
-  Log() << "Subscriber " << token_ << " registered" << endl;
+  spdlog::info("Subscriber {} registered", token_);
 }
 
 void SubscriberClient::DoRead() {
@@ -62,11 +65,11 @@ void SubscriberClient::DoRead() {
         callback_(std::move(buffer));
         this->DoRead();
       } else if (message_type_ == MessageType::kShutdown) {
-        Log() << "Subscriber received shutdown message" << endl;
+        spdlog::info("Subscriber received shutdown message");
         socket_.close();
       } else {
-        Log() << "Subscriber receive unknown message type: " << ToString(message_type_) << endl;
-        Log() << "Disconnecting" << endl;
+        spdlog::error("Subscriber receive unknown message type: {}", ToString(message_type_));
+        spdlog::error("Disconnecting");
         socket_.close();
       }
     });
@@ -87,20 +90,20 @@ void SubscriberClient::Deregister() {
 
     asio::read(client, asio::buffer(&type, sizeof(MessageType)));
     if (type != MessageType::kSubDeregisterReply) {
-      Error() << "Subscriber client did not receive standard reply type" << ToString(type) << endl;
-      Error() << "Closing connection and assuming deregistration" << endl;
+      spdlog::error("Subscriber client did not receive standard reply type {}", ToString(type));
+      spdlog::error("Closing connection and assuming deregistration");
       socket_.cancel();
     }
   }
 
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout) {
-    Error() << "SubscriberClient timed out waiting to close server connection" << endl;
+    spdlog::error("SubscriberClient timed out waiting to close server connection");
     return;
   }
 
   token_ = -1;
-  Log() << "Subscriber deregistered" << endl;
+  spdlog::info("Subscriber deregistered");
 }
 
 }  // namespace pubsub

@@ -1,8 +1,10 @@
 #include "core.h"
+
 #include <future>
 #include <thread>
+#include <spdlog/spdlog.h>
+
 #include "asio.h"
-#include "logging.h"
 
 using namespace std;
 
@@ -11,7 +13,7 @@ namespace pubsub {
 static bool gRunning = false;
 
 void SignalHandler(int signal) {
-  Log() << "Signal caught: " << signal << endl;
+  spdlog::info("Signal caught: {}", signal);
   gRunning = false;
 }
 

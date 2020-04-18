@@ -1,7 +1,9 @@
 #include "master_client.h"
+
 #include "asio.h"
+#include "spdlog/spdlog.h"
+
 #include "messages.h"
-#include "logging.h"
 #include "types.h"
 
 using namespace std;
@@ -24,14 +26,14 @@ vector<TopicConfig> MasterClient::QueryForTopics() {
 
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
   if (type != MessageType::kTopicsQueryReply) {
-    Error() << "Query client did not receive standard reply type" << ToString(type) << endl;
+    spdlog::error("Query client did not receive standard reply type", ToString(type));
     return {};
   }
 
   uint32_t num_topics = 0;
   asio::read(client, asio::buffer(reinterpret_cast<char*>(&num_topics), sizeof(uint32_t)));
 
-  Log() << "Receiving " << num_topics << " topics" << endl;
+  spdlog::info("Receiving {} topics", num_topics);
 
   vector<TopicConfig> topic_configs;
   for (uint32_t i = 0; i < num_topics; ++i) {
@@ -62,7 +64,7 @@ void MasterClient::AddTopic(const TopicConfig& topic_config) {
 
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
   if (type != MessageType::kTopicAddReply)
-    Error() << "Master client AddTopic did not receive AddTopicReply" << ToString(type) << endl;
+    spdlog::error("Master client AddTopic did not receive AddTopicReply {}", ToString(type));
 }
 
 }  // namespace pubsub

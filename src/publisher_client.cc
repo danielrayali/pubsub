@@ -1,8 +1,11 @@
 #include "publisher_client.h"
+
 #include <string>
+
 #include "asio.h"
+#include "spdlog/spdlog.h"
+
 #include "buffer.h"
-#include "logging.h"
 #include "messages.h"
 
 using asio::ip::tcp;
@@ -40,12 +43,12 @@ void PublisherClient::Publish(const void* data, const uint64_t size) const {
     count++;
   }
 
-  Log() << "Published " << count << " blocks, containing a total of " << size << " bytes" << endl;
+  spdlog::info("Published {} blocks, containing a total of {} bytes", count, size);
 
   asio::read(client, asio::buffer(&type, sizeof(MessageType)));
 
   if (type != MessageType::kPublisherReply)
-    Error() << "Problem publishing data. Error received: " << ToString(type) << endl;
+    spdlog::error("Problem publishing data. Error received: {}", ToString(type));
 }
 
 }

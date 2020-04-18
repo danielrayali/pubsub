@@ -1,6 +1,7 @@
 include_directories (
   ${CMAKE_SOURCE_DIR}/src
   ${CMAKE_SOURCE_DIR}/external/asio/asio/include
+  ${CMAKE_SOURCE_DIR}/external/spdlog/include
 )
 
 add_library (pubsub
@@ -13,8 +14,6 @@ add_library (pubsub
   config.h
   core.cc
   core.h
-  logging.cc
-  logging.h
   master_server.cc
   master_server.h
   messages.cc

@@ -2,11 +2,13 @@
 #include <sargs.h>
 #include <iostream>
 
+#include "spdlog/spdlog.h"
+
 using namespace std;
 
 void callback(pubsub::Buffer&& buffer) {
   string received(reinterpret_cast<char*>(buffer.Get()), buffer.Size() - 1);
-  cout << "Data received: " << received << endl;
+  spdlog::info("Data received: {}", received);
 }
 
 int main(int argc, char* argv[]) {

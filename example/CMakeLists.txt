@@ -4,6 +4,7 @@ include_directories (
   ${CMAKE_SOURCE_DIR}/external/asio/asio/include
   ${CMAKE_SOURCE_DIR}/external/sargs/src
   ${CMAKE_SOURCE_DIR}/external/mio/include
+  ${CMAKE_SOURCE_DIR}/external/spdlog/include
 )
 
 add_executable (master_server

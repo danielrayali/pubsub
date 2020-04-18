@@ -1,12 +1,15 @@
 #include "master_server.h"
+
 #include <fstream>
 #include <future>
 #include <set>
 #include <system_error>
 #include <thread>
+
+#include "spdlog/spdlog.h"
 #include "asio.h"
+
 #include "config.h"
-#include "logging.h"
 #include "messages.h"
 #include "types.h"
 
@@ -34,7 +37,7 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
     asio::read(socket_, asio::buffer(&type, sizeof(MessageType)));
 
     if (type == MessageType::kTopicsQuery) {
-      Log() << "Servicing topics query client" << endl;
+      spdlog::info("Servicing topics query client");
 
       type = MessageType::kTopicsQueryReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
@@ -49,9 +52,9 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
         asio::write(socket_, asio::buffer(&topic_config.front(), topic_config.size()));
       }
 
-      Log() << "Sent " << num_topics << " topics" << endl;
+      spdlog::info("Sent {} topics", num_topics);
     } else if (type == MessageType::kTopicAdd) {
-      Log() << "Servicing topic add client" << endl;
+      spdlog::info("Servicing topic add client");
 
       uint64_t size = 0;
       asio::read(socket_, asio::buffer(&size, sizeof(uint64_t)));
@@ -60,15 +63,17 @@ class MasterSession : public std::enable_shared_from_this<MasterSession> {
 
       TopicConfig topic_config;
       topic_config.FromString(buffer);
-      Log() << "Adding topic\n  Name: " << topic_config.name << "\n  Port: " << topic_config.port << endl;
 
+      spdlog::info("Adding topic");
+      spdlog::info("  Name: {}", topic_config.name);
+      spdlog::info("  Port: {}", topic_config.port);
       topic_servers_.emplace_back(new TopicServer(topic_config));
       topic_servers_.back()->Run();
 
       type = MessageType::kTopicAddReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
     } else {
-      Error() << "Master session cannot handle received message type: " << ToString(type) << endl;
+      spdlog::error("Master session cannot handle received message type: {}", ToString(type));
     }
   }
 
@@ -116,7 +121,7 @@ void MasterServer::Run() {
   if (is_running_)
     return;
 
-  Log() << "Starting master server" << endl;
+  spdlog::info("Starting master server");
   this->DoAccept();
   result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
   is_running_ = true;
@@ -125,7 +130,7 @@ void MasterServer::Run() {
 void MasterServer::Stop() {
   if (!is_running_)
     return;
-  Log() << "Stopping master server" << endl;
+  spdlog::info("Stopping master server");
 
   acceptor_.cancel();
 
@@ -135,7 +140,7 @@ void MasterServer::Stop() {
   DefaultIoService().stop();
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
-    Error() << "Timed out waiting for MasterServer thread to return. This may cause erroneous shutdown" << endl;
+    spdlog::error("Timed out waiting for MasterServer thread to return. This may cause erroneous shutdown");
 
   is_running_ = false;
 }
@@ -146,7 +151,7 @@ void MasterServer::DoAccept() {
       std::make_shared<MasterSession>(std::move(socket_), topic_servers_)->ServiceClient();
       this->DoAccept();
     } else if (ec != asio::error::operation_aborted) {
-      Error() << "Error in async_accpet lambda: " << ec << " " << ec.message() << endl;
+      spdlog::error("Error in async_accpet lambda: {} {}", ec.value(), ec.message());
     }
   });
 }
@@ -161,9 +166,7 @@ void MasterServer::Configure() {
   for (const TopicConfig& config : config_.topic_configs) {
     auto iter = ports.find(config.port);
     if (iter != ports.end()) {
-      string error = "Configuration invalid, port already in use";
-      Error() << error << endl;
-      throw runtime_error(error);
+      throw runtime_error("Configuration invalid, port already in use");
     }
 
     ports.insert(config.port);

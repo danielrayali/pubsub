@@ -1,10 +1,13 @@
 #include "topic_server.h"
+
 #include <future>
 #include <system_error>
 #include <thread>
+
 #include "asio.h"
+#include "spdlog/spdlog.h"
+
 #include "buffer.h"
-#include "logging.h"
 #include "messages.h"
 #include "types.h"
 
@@ -29,7 +32,7 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
   ~TopicSession() = default;
 
   void ServiceClient() {
-    Log() << "Servicing topic client" << endl;
+    spdlog::info("Servicing topic client");
     MessageType type = MessageType::kUnknown;
     asio::read(socket_, asio::buffer(&type, sizeof(MessageType)));
 
@@ -40,7 +43,7 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
       asio::write(inserted.first->second, asio::buffer(&type, sizeof(MessageType)));
       asio::write(inserted.first->second, asio::buffer(&id_counter_, sizeof(int32_t)));
 
-      Log() << "Subscriber " << id_counter_ << " registered" << endl;
+      spdlog::info("Subscriber {} registered", id_counter_);
       id_counter_++;
     } else if (type == MessageType::kSubDeregister) {
       int32_t client_id = -1;
@@ -48,7 +51,7 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
 
       auto iter = subscribers_.find(client_id);
       if (iter == subscribers_.end()) {
-        Log() << "Client " << client_id << " is not registered, cannot deregister" << endl;
+        spdlog::error("Client {} is not registered, cannot deregister", client_id);
         type = MessageType::kError;
         asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
         return;
@@ -61,9 +64,9 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
       type = MessageType::kSubDeregisterReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
 
-      Log() << "Subscriber " + to_string(client_id) + " deregistered" << endl;
+      spdlog::info("Subscriber {} deregistered", to_string(client_id));
     } else if (type == MessageType::kPublisher) {
-      Log() << "Receiving and sending publisher data" << endl;
+      spdlog::info("Receiving and sending publisher data");
 
       uint64_t total_data_size = 0;
       asio::read(socket_, asio::buffer(&total_data_size, sizeof(uint64_t)));
@@ -90,9 +93,9 @@ class TopicSession : public std::enable_shared_from_this<TopicSession> {
       type = MessageType::kPublisherReply;
       asio::write(socket_, asio::buffer(&type, sizeof(MessageType)));
 
-      Log() << total_data_size << " bytes sent to " << subscribers_.size() << " subscribers" << endl;
+      spdlog::info("{} bytes sent to {} subscribers", total_data_size, subscribers_.size());
     } else {
-      Error() << "Topic session cannot handle received message type: " << ToString(type) << endl;
+      spdlog::error("Topic session cannot handle received message type: {}", ToString(type));
     }
   }
 
@@ -117,7 +120,7 @@ void TopicServer::Run() {
   if (is_running_)
     return;
 
-  Log() << "Starting topic server" << endl;
+  spdlog::info("Starting topic server");
   this->DoAccept();
   result_ = std::async(std::launch::async, []{ DefaultIoService().run(); });
   is_running_ = true;
@@ -127,13 +130,13 @@ void TopicServer::Stop() {
   if (!is_running_)
     return;
 
-  Log() << "Stopping topic server" << endl;
+  spdlog::info("Stopping topic server");
   acceptor_.cancel();
   DefaultIoService().stop();
 
   future_status status = result_.wait_for(chrono::milliseconds(100));
   if (status == future_status::timeout)
-    Error() << "Timed out waiting for TopicServer thread to return. This may cause erroneous shutdown" << endl;
+    spdlog::error("Timed out waiting for TopicServer thread to return. This may cause erroneous shutdown");
 
   MessageType type = MessageType::kShutdown;
   for (auto& client : subscribers_) {
@@ -154,7 +157,7 @@ void TopicServer::DoAccept() {
       std::make_shared<TopicSession>(std::move(socket_), subscribers_, id_counter_)->ServiceClient();
       this->DoAccept();
     } else if (ec != asio::error::operation_aborted) {
-      Error() << "Error in async_accpet lambda: " << ec << " " << ec.message() << endl;
+      spdlog::error("Error in async_accpet lambda: {} {}", ec.value(), ec.message());
     }
   });
 }
